@@ -76,6 +76,10 @@ class RAAGDETREncoder(nn.Module):
         # features: (B, h*w, d_model)
         # rail_mask: (B, H, W) - binary rail probability map
         
+        # Infer spatial dimensions from features
+        B, N, d_model = features.shape
+        h = w = int(N ** 0.5)  # Assume square feature map
+        
         # Downsample and create spatial bias
         rail_mask_down = F.interpolate(rail_mask.unsqueeze(1), size=(h, w))  # (B, 1, h, w)
         rail_bias = torch.log(rail_mask_down + 1e-6) - torch.log(1 - rail_mask_down + 1e-6)  # (B, 1, h, w)
@@ -89,7 +93,7 @@ class RAAGDETREncoder(nn.Module):
             V = layer.self_attn.v_proj(x)
             
             # Attention logits
-            attn_logits = torch.matmul(Q, K.transpose(-2, -1)) / sqrt(d_model)  # (B, h*w, h*w)
+            attn_logits = torch.matmul(Q, K.transpose(-2, -1)) / (d_model ** 0.5)  # (B, h*w, h*w)
             
             # Apply rail-aware bias (broadcast across all query positions)
             attn_logits = attn_logits + self.rail_lambda * rail_bias  # Broadcasting
