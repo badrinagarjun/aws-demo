@@ -3,6 +3,7 @@ import time
 import json
 import signal
 import sys
+import os
 from typing import Optional
 import boto3
 from botocore.exceptions import ClientError
@@ -14,6 +15,26 @@ sqs = boto3.client('sqs')
 s3 = boto3.client('s3')
 
 RUNNING = True
+
+# ML model - loaded lazily
+_model = None
+
+
+def get_model():
+    """Load the sentiment model lazily."""
+    global _model
+    if _model is None:
+        try:
+            import joblib
+            model_path = os.environ.get('MODEL_PATH', 'sentiment_model.pkl')
+            if os.path.exists(model_path):
+                _model = joblib.load(model_path)
+                logger.info("Loaded sentiment model from %s", model_path)
+            else:
+                logger.warning("Model file not found at %s, sentiment analysis disabled", model_path)
+        except Exception as e:
+            logger.warning("Failed to load model: %s", e)
+    return _model
 
 
 def graceful_shutdown(signum, frame):
@@ -35,7 +56,13 @@ def process_s3_object(bucket: str, key: str) -> dict:
         raise
 
     lines = text.splitlines()
-    words = [w.strip('.,;:\"\'()[]{}').lower() for line in lines for w in line.split() if w.strip()]
+    words = []
+    for line in lines:
+        for w in line.split():
+            if w.strip():
+                cleaned = w.strip('.,;:\"\'()[]{}!?').lower()
+                if cleaned:
+                    words.append(cleaned)
 
     # simple analysis
     from collections import Counter
@@ -48,6 +75,27 @@ def process_s3_object(bucket: str, key: str) -> dict:
         'words': len(words),
         'top_5': wc.most_common(5),
     }
+    
+    # Add sentiment analysis if model is available
+    model = get_model()
+    if model is not None:
+        try:
+            # Analyze overall text sentiment
+            if text.strip():
+                prediction = model.predict([text])[0]
+                try:
+                    proba = model.predict_proba([text])[0]
+                    confidence = float(max(proba))
+                except AttributeError:
+                    confidence = 1.0
+                
+                result['sentiment'] = {
+                    'overall': prediction,
+                    'confidence': confidence
+                }
+        except Exception as e:
+            logger.warning("Sentiment analysis failed: %s", e)
+    
     return result
 
 

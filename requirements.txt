@@ -1,2 +1,4 @@
 boto3>=1.20.0
 botocore>=1.23.0
+scikit-learn>=1.0.0
+joblib>=1.1.0

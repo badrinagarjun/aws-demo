@@ -10,11 +10,31 @@ logger.setLevel(logging.INFO)
 
 s3 = boto3.client('s3')
 
+# ML model - loaded lazily
+_model = None
+
+
+def get_model():
+    """Load the sentiment model lazily."""
+    global _model
+    if _model is None:
+        try:
+            import joblib
+            model_path = os.environ.get('MODEL_PATH', 'sentiment_model.pkl')
+            if os.path.exists(model_path):
+                _model = joblib.load(model_path)
+                logger.info("Loaded sentiment model from %s", model_path)
+            else:
+                logger.warning("Model file not found at %s, sentiment analysis disabled", model_path)
+        except Exception as e:
+            logger.warning("Failed to load model: %s", e)
+    return _model
+
 
 def process_s3_object(bucket: str, key: str) -> dict:
     """
     Read an S3 object (text) and return simple analysis results.
-    Returns a dict with line_count, word_count, top_words.
+    Returns a dict with line_count, word_count, top_words, and sentiment analysis.
     """
     try:
         resp = s3.get_object(Bucket=bucket, Key=key)
@@ -28,7 +48,11 @@ def process_s3_object(bucket: str, key: str) -> dict:
     words = []
     for line in lines:
         # simple tokenization on whitespace and lowercasing
-        words.extend([w.strip(".,;:\"'()[]{}") .lower() for w in line.split() if w.strip()])
+        for w in line.split():
+            if w.strip():
+                cleaned = w.strip(".,;:\"'()[]{}!?").lower()
+                if cleaned:  # Only add non-empty words after cleaning
+                    words.append(cleaned)
 
     word_counts = Counter(w for w in words if w)
     top_words = word_counts.most_common(10)
@@ -40,6 +64,27 @@ def process_s3_object(bucket: str, key: str) -> dict:
         'word_count': len(words),
         'top_words': top_words,
     }
+    
+    # Add sentiment analysis if model is available
+    model = get_model()
+    if model is not None:
+        try:
+            # Analyze overall text sentiment
+            if text.strip():
+                prediction = model.predict([text])[0]
+                try:
+                    proba = model.predict_proba([text])[0]
+                    confidence = float(max(proba))
+                except AttributeError:
+                    confidence = 1.0
+                
+                result['sentiment'] = {
+                    'overall': prediction,
+                    'confidence': confidence
+                }
+        except Exception as e:
+            logger.warning("Sentiment analysis failed: %s", e)
+    
     return result
 
 
