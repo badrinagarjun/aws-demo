@@ -48,7 +48,11 @@ def process_s3_object(bucket: str, key: str) -> dict:
     words = []
     for line in lines:
         # simple tokenization on whitespace and lowercasing
-        words.extend([w.strip(".,;:\"'()[]{}").lower() for w in line.split() if w.strip()])
+        for w in line.split():
+            if w.strip():
+                cleaned = w.strip(".,;:\"'()[]{}!?").lower()
+                if cleaned:  # Only add non-empty words after cleaning
+                    words.append(cleaned)
 
     word_counts = Counter(w for w in words if w)
     top_words = word_counts.most_common(10)

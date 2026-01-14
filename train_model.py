@@ -71,6 +71,9 @@ def train_model(output_path: str = "sentiment_model.pkl"):
     logger.info("Training model with %d samples...", len(texts))
     
     # Create a pipeline with TF-IDF vectorizer and Naive Bayes classifier
+    # max_features=1000: Limit vocabulary size to most common 1000 words
+    # ngram_range=(1, 2): Use both single words and word pairs
+    # alpha=0.1: Smoothing parameter for Naive Bayes
     model = Pipeline([
         ('tfidf', TfidfVectorizer(max_features=1000, ngram_range=(1, 2))),
         ('classifier', MultinomialNB(alpha=0.1))

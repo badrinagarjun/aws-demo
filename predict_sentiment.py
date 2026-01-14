@@ -14,6 +14,8 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
 # Cache for loaded model
+# Note: This cache is not thread-safe. For concurrent environments,
+# consider using threading.Lock to protect cache access.
 _model_cache = {}
 
 

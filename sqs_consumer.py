@@ -56,7 +56,13 @@ def process_s3_object(bucket: str, key: str) -> dict:
         raise
 
     lines = text.splitlines()
-    words = [w.strip('.,;:\"\'()[]{}').lower() for line in lines for w in line.split() if w.strip()]
+    words = []
+    for line in lines:
+        for w in line.split():
+            if w.strip():
+                cleaned = w.strip('.,;:\"\'()[]{}!?').lower()
+                if cleaned:
+                    words.append(cleaned)
 
     # simple analysis
     from collections import Counter
