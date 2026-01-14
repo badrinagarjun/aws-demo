@@ -13,14 +13,20 @@ import joblib
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
+# Cache for loaded model
+_model_cache = {}
+
 
 def load_model(model_path: str = "sentiment_model.pkl"):
-    """Load the trained model from disk."""
-    if not os.path.exists(model_path):
-        raise FileNotFoundError(f"Model file not found: {model_path}")
+    """Load the trained model from disk with caching."""
+    if model_path not in _model_cache:
+        if not os.path.exists(model_path):
+            raise FileNotFoundError(f"Model file not found: {model_path}")
+        
+        logger.info("Loading model from %s", model_path)
+        _model_cache[model_path] = joblib.load(model_path)
     
-    logger.info("Loading model from %s", model_path)
-    return joblib.load(model_path)
+    return _model_cache[model_path]
 
 
 def predict_sentiment(text: str, model_path: str = "sentiment_model.pkl") -> dict:
