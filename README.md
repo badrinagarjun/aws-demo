@@ -100,15 +100,22 @@ cd aws-demo
 # Install dependencies
 pip install -r requirements.txt
 
+# Note: RT-DETR integration requires the RT-DETR codebase
+# Install from official repository or implement following IMPLEMENTATION.md
+
 # Download and extract dataset (see Dataset section above)
 ```
 
+**Note**: This repository contains the algorithm design and implementation guide. The actual model implementation (train.py, models/, etc.) should be created following the structure described in IMPLEMENTATION.md.
+
 ## Usage
+
+**Note**: The following commands are illustrative examples showing how the system should be used once implemented. See IMPLEMENTATION.md for guidance on creating these scripts.
 
 ### Training
 
 ```bash
-# Train RAAG-DETR on RailFOD23 dataset
+# Train RAAG-DETR on RailFOD23 dataset (once train.py is implemented)
 python train.py \
     --data data/RailFOD23 \
     --backbone resnet50 \

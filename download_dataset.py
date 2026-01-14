@@ -97,7 +97,9 @@ def main():
         print("\nNext steps:")
         print("  1. Review the dataset structure")
         print("  2. Prepare rail corridor annotations if needed")
-        print("  3. Start training with: python train.py --data", args.data_dir)
+        print("  3. Implement the model following IMPLEMENTATION.md")
+        print("  4. Create train.py script (see IMPLEMENTATION.md for structure)")
+        print("  5. Start training with: python train.py --data", args.data_dir)
     
     return 0 if dataset_exists else 1
 
