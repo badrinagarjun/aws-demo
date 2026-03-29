@@ -1,26 +1,48 @@
 # aws-demo-project
 
-A compact, real-feeling Python demo showing an AWS workflow using S3, SQS, and Lambda.
+A working Python demo showing AWS workflow with S3, SQS, Lambda, and **ML-powered sentiment analysis**.
 
 **Architecture**
 - A client uploads a text file to S3 (`upload_to_s3.py`).
 - A producer sends an SQS message referencing the S3 object (`sqs_producer.py`).
-- A consumer polls SQS, reads the referenced S3 object, processes it, then deletes the message (`sqs_consumer.py`).
+- A consumer polls SQS, reads the referenced S3 object, processes it with **sentiment analysis**, then deletes the message (`sqs_consumer.py`).
 - An AWS Lambda function (`lambda_function.py`) does the same processing when invoked with an event (supports native S3 events and SQS-like messages).
 
-This project is intentionally small but uses real code patterns (argument parsing, error handling, logging, and boto3 usage).
+**ML Component**
+- Trained sentiment classifier (positive/negative/neutral)
+- Analyzes text content automatically
+- Works in Lambda and consumer
+
+**Quick Start**
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Train the model (already trained, but you can retrain)
+python train_model.py
+
+# Run complete demo
+python demo.py
+
+# Test predictions
+python predict_sentiment.py --text "This is amazing!"
+```
 
 **Services used**
 - S3: object storage for text files.
 - SQS: message queue to decouple producers and consumers.
 - Lambda: serverless function that can process S3-based events.
+- **ML: scikit-learn sentiment classifier (trained and ready)**
 
 **Files**
-- `lambda_function.py` - Lambda handler and helper functions. Reads S3 objects and returns analysis.
+- `lambda_function.py` - Lambda handler with sentiment analysis. Reads S3 objects and returns analysis + sentiment.
+- `sqs_consumer.py` - Long-polling SQS consumer with sentiment analysis.
+- `train_model.py` - Train the sentiment classifier (already trained).
+- `predict_sentiment.py` - Standalone sentiment prediction CLI.
+- `demo.py` - Complete working demo (no AWS needed).
 - `upload_to_s3.py` - CLI script to upload a local file to S3.
 - `sqs_producer.py` - CLI script that sends a message to SQS with `bucket` and `key`.
-- `sqs_consumer.py` - Long-polling SQS consumer that processes messages and deletes them on success.
-- `requirements.txt` - Python dependencies (`boto3`).
+- `requirements.txt` - Python dependencies (`boto3`, `scikit-learn`, `joblib`).
 
 
 ## IAM / Permissions
